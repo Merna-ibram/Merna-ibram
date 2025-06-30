@@ -1,0 +1,6 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_res_partner,access_res_partner,model_res_partner,,1,1,1,1
+access_account_move_admin,Access Invoices Admin,account.model_account_move,,1,1,1,1
+access_res_users,access_res_users,model_res_users,,1,1,1,1
+access_my_cases,Access My Cases,model_my_cases,,1,1,1,1
+access_hr_employee,access_hr_employee,model_hr_employee,,1,1,1,1
