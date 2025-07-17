@@ -1,4 +1,5 @@
 from odoo import api, models, fields
+from datetime import datetime, timedelta
 from odoo.osv import expression
 class PatientAppointment(models.Model):
     _name = "patient.appointment"
@@ -6,14 +7,38 @@ class PatientAppointment(models.Model):
 
 
     patient_id = fields.Many2one('res.partner', string="Patient")
-    doctors_id = fields.Many2one('hr.employee', string="الاخصائي",related='patient_id.doctor', store=True)
+    doctors_id = fields.Many2one('hr.employee', string="الاخصائي")
     appointment_date = fields.Datetime(string="Appointment Date")
     appointment_type = fields.Selection([('checkup', 'Checkup'),('treatment', 'Treatment'),('consultation', 'Consultation')],string='Appointment Type')
     observation = fields.Text(string="Observation")
     pharmacy_line_ids = fields.One2many('patient.pharmacy.lines', 'appointment_id', string='Pharmacy Lines')
     patient_prescription_line_ids = fields.One2many('patient.prescription.line','prescription_id',string='Prescription Lines')
     total_amount = fields.Float(string="Total Amount", compute="_compute_total_amount", store=True)
+    done = fields.Boolean(string="تم", default=False)
+    notes = fields.Text(string="ملاحظات")
+    is_reserved = fields.Boolean(string="محجوز؟", default=False)
 
+    is_this_week = fields.Boolean(string="هذا الأسبوع", compute='_compute_is_this_week', store=False)
+
+    @api.onchange('patient_id')
+    def _onchange_patient_id(self):
+        if self.patient_id and self.patient_id.doctor:
+            self.doctors_id = self.patient_id.doctor
+        else:
+            self.doctors_id = False
+
+    @api.depends('appointment_date')
+    def _compute_is_this_week(self):
+        today = fields.Date.context_today(self)
+        start_of_week = today - timedelta(days=today.weekday())  # يوم الاثنين
+        end_of_week = start_of_week + timedelta(days=6)  # الأحد
+
+        for rec in self:
+            if rec.appointment_date:
+                date_only = rec.appointment_date.date()
+                rec.is_this_week = start_of_week <= date_only <= end_of_week
+            else:
+                rec.is_this_week = False
     @api.depends('pharmacy_line_ids.total')
     def _compute_total_amount(self):
         for appointment in self:
@@ -31,20 +56,35 @@ class PatientAppointment(models.Model):
             'doctors_id': self.doctors_id,
         }
 
-    # @api.model
-    # def search_fetch(self, domain, field_names, offset=0, limit=None, order=None):
-    #     user = self.env.user
-    #
-    #     # Check if user is in the doctor group
-    #     if user.has_group('doctors_appointment.group_doctors_appointment_doctor'):
-    #         domain = expression.AND([
-    #             domain,
-    #             [('partner_id.doctor.user_id', '=', user.id)]
-    #         ])
-    #
-    #     return super(PatientAppointment, self).search_fetch(
-    #         domain, field_names, offset=offset, limit=limit, order=order
-    #     )
+    @api.model
+    def search_fetch(self, domain, field_names, offset=0, limit=None, order=None):
+        user = self.env.user
+
+        # Check if user is in the doctor group
+        if user.has_group('doctors_appointment.group_doctors_appointment_doctor'):
+            domain = expression.AND([
+                domain,
+                [('doctors_id.user_id', '=', user.id)]])
+
+
+        return super(PatientAppointment, self).search_fetch(
+            domain, field_names, offset=offset, limit=limit, order=order
+        )
+
+    def write(self, vals):
+        for rec in self:
+            # لو تم تغيير الدكتور
+            if 'doctors_id' in vals and vals['doctors_id'] != rec.doctors_id.id:
+                # ناخد نسخة من البيانات الحالية
+                new_vals = rec.copy_data()[0]
+                # نحدث الدكتور في النسخة
+                new_vals['doctors_id'] = vals['doctors_id']
+                # نعمل سجل جديد
+                self.env['patient.appointment'].create(new_vals)
+                return True  # نرجّع بدون تعديل السطر الأصلي
+
+        return super(PatientAppointment, self).write(vals)
+
 
 class PatientPharmacyLines(models.Model):
     _name = "patient.pharmacy.lines"
@@ -66,10 +106,10 @@ class PatientPharmacyLines(models.Model):
 
     def addto_prescription(self):
         return {
-        
+
             'name': 'Add Medicine to Prescription',
             'view_mode': 'form',
-            'res_model': 'patient.prescription.wizard',          
+            'res_model': 'patient.prescription.wizard',
             'type': 'ir.actions.act_window',
             'target': 'new',
             'context':{
@@ -79,7 +119,8 @@ class PatientPharmacyLines(models.Model):
 
             }
         }
-    
+
+
     def action_remove_from_prescription(self):
         prescription_lines = self.env['patient.prescription.line'].search([
             ('medicine_id', '=', self.medicine_id.id),
@@ -90,7 +131,7 @@ class PatientPharmacyLines(models.Model):
             self.in_prescription = False
         return {'type': 'ir.actions.act_window_close'}
 
-    
+
 class PatientPrescriptionLine(models.Model):
     _name = 'patient.prescription.line'
     _description = 'Patient Prescription Line'
