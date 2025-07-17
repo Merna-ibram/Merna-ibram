@@ -1,6 +1,21 @@
 <odoo>
     <data>
 
+                <record id="view_account_list_inherit_medical" model="ir.ui.view">
+            <field name="name">account.move.form.medical.inherit</field>
+            <field name="model">account.move</field>
+            <field name="inherit_id" ref="account.view_out_invoice_tree"/>
+            <field name="arch" type="xml">
+
+               <xpath expr="//field[@name='mobile']" position="after">
+                    <field name="agents_name_invoice" widget="many2many_tags"/>
+                    <field name="commission_total"/>
+               </xpath>
+
+            </field>
+        </record>
+
+
         <!-- تعديل فورم الفاتورة -->
         <record id="view_account_form_inherit_medical" model="ir.ui.view">
             <field name="name">account.move.form.medical.inherit</field>
@@ -14,17 +29,18 @@
                        <field name="age"/>
                        <field name="gender"/>
                        <field name="mobile"/>
+                       <field name="agents_name_invoice" widget="many2many_tags"/>
                    </group>
                </xpath>
 
-               <xpath expr="//group[@id='header_right_group']" position="replace">
-                    <group id="header_right_group">
-                        <separator string="Subscription Info"/>
-                        <field name="start_date"/>
-                        <field name="months"/>
-                        <field name="end_date"/>
-                    </group>
-               </xpath>
+<!--               <xpath expr="//group[@id='header_right_group']" position="replace">-->
+<!--                    <group id="header_right_group">-->
+<!--                        <separator string="Subscription Info"/>-->
+<!--                        <field name="start_date"/>-->
+<!--                        <field name="months"/>-->
+<!--                        <field name="end_date"/>-->
+<!--                    </group>-->
+<!--               </xpath>-->
 
             </field>
         </record>
@@ -45,17 +61,17 @@
         </record>
 
         <!-- كرون جوب لإنشاء الفواتير -->
-        <record id="ir_cron_create_subscription_invoices" model="ir.cron">
-            <field name="name">Create Subscription Invoices</field>
-            <field name="model_id" ref="account.model_account_move"/>
-            <field name="state">code</field>
-            <field name="code">model.create_subscription_invoices()</field>
-            <field name="interval_number">1</field>
-            <field name="interval_type">days</field>
-            <field name="numbercall">-1</field>
-            <field name="active">True</field>
-            <field name="user_id" ref="base.user_admin"/>
-        </record>
+<!--        <record id="ir_cron_create_subscription_invoices" model="ir.cron">-->
+<!--            <field name="name">Create Subscription Invoices</field>-->
+<!--            <field name="model_id" ref="account.model_account_move"/>-->
+<!--            <field name="state">code</field>-->
+<!--            <field name="code">model.create_subscription_invoices()</field>-->
+<!--            <field name="interval_number">1</field>-->
+<!--            <field name="interval_type">days</field>-->
+<!--            <field name="numbercall">-1</field>-->
+<!--            <field name="active">True</field>-->
+<!--            <field name="user_id" ref="base.user_admin"/>-->
+<!--        </record>-->
 
         <!-- فلتر جديد بالهاتف في البحث -->
         <record id="view_account_invoice_filter_inherit_mobile" model="ir.ui.view">
@@ -65,6 +81,7 @@
             <field name="arch" type="xml">
                 <xpath expr="//search" position="inside">
                     <field name="mobile"/>
+                    <field name="agents_name_invoice"/>
 <!--                    <filter string="Mobile" name="filter_mobile" domain="[('partner_id.mobile', 'ilike', self)]"/>-->
                 </xpath>
             </field>
