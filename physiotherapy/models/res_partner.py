@@ -106,12 +106,12 @@ class Registration(models.Model):
     muscle_test = fields.Text(string="Manual Muscle Test")
     special_test = fields.Text(string="Special Test")
 
-    @api.constrains('is_patient', 'diagnosis', 'doctor')
+    @api.constrains('is_patient', 'doctor')
     def _check_required_fields_for_patient(self):
         for rec in self:
             if rec.is_patient:
-                if not rec.diagnosis:
-                    raise ValidationError("يجب إدخال التشخيص للمريض.")
+                # if not rec.diagnosis:
+                #     raise ValidationError("يجب إدخال التشخيص للمريض.")
                 if not rec.doctor:
                     raise ValidationError("يجب تحديد الأخصائي للمريض.")
     # @api.constrains('age')

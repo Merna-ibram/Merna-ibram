@@ -1,7 +1,7 @@
 <odoo>
     <data>
 
-                <record id="view_account_list_inherit_medical" model="ir.ui.view">
+        <record id="view_account_list_inherit_medical" model="ir.ui.view">
             <field name="name">account.move.form.medical.inherit</field>
             <field name="model">account.move</field>
             <field name="inherit_id" ref="account.view_out_invoice_tree"/>
