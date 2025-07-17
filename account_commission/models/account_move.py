@@ -1,6 +1,7 @@
 # Copyright 2020 Tecnativa - Manuel Calero
 # Copyright 2014-2022 Tecnativa - Pedro M. Baeza
 # License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl).
+from collections import defaultdict
 
 from lxml import etree
 
@@ -15,7 +16,7 @@ class AccountMove(models.Model):
         for rec in self:
             rec.new_customer = rec.partner_id.new_customer
     commission_total = fields.Float(
-        string="Commissions",
+        string="Commissions",readonly=1
     )
     partner_agent_ids = fields.Many2many(
         string="Agents",
@@ -120,6 +121,119 @@ class AccountMove(models.Model):
                 res["arch"] = etree.tostring(invoice_xml)
         return res
 
+
+
+    def action_post(self):
+        # First call the original action_post
+        res = super().action_post()
+
+        # Now apply our commission logic
+        for move in self:
+            print('Invoice posted')
+            agents = move.invoice_line_ids.mapped('agents')
+            if agents:
+                move.agents_name_invoice = [(6, 0, agents.ids)]
+
+            if move.move_type == "out_invoice" and move.partner_id:
+                partner = move.partner_id
+
+                # Loop through all agents for the partner
+                for agent in partner.agent_ids:
+                    print(f"\nAgent: {agent.name}")
+                    print(f"Salary: {agent.salary}")
+
+                    # Get all customers with this agent
+                    customers = self.env['res.partner'].search([
+                        ('agent_ids', 'in', agent.id)
+                    ])
+
+                    print(move.agents_name_invoice)
+
+                    # Make sure the current partner is included in customers
+                    if partner.id not in customers.ids:
+                        customers |= partner
+
+                    # Get all posted invoices for these customers including the current one
+                    invoices = self.env['account.move'].search([
+                        ('move_type', '=', 'out_invoice'),
+                        ('agents_name_invoice', 'in', move.agents_name_invoice.ids),
+                        ('state', 'in', ['posted']),
+                        ('invoice_date', '!=', False),
+                    ])
+                    print(invoices)
+
+                    # Group totals by month name
+                    monthly_totals = defaultdict(float)
+                    for inv in invoices:
+                        if inv.invoice_date:
+                            month_name = inv.invoice_date.strftime('%B')  # January, February, etc.
+                            monthly_totals[month_name] += inv.amount_total
+
+                    # Ordered month names for display
+                    ordered_months = [
+                        'January', 'February', 'March', 'April', 'May', 'June',
+                        'July', 'August', 'September', 'October', 'November', 'December'
+                    ]
+
+                    # Get current invoice details
+                    invoice_date = move.invoice_date or fields.Date.today()
+                    current_month_name = invoice_date.strftime('%B')
+                    current_invoice_total = move.amount_total
+                    monthly_invoice_total = monthly_totals.get(current_month_name, 0.0)
+                    salary_threshold = move.agents_name_invoice.salary * 2
+                    print('salary_threshold', salary_threshold)
+
+                    # Display monthly totals for debugging
+                    for month in ordered_months:
+                        total = monthly_totals.get(month, 0.0)
+                        print(f"Agent: {agent.name}, Month: {month}, Total: {total:.2f}")
+                        if month == current_month_name:
+                            print(f"?? Current Invoice Total This Month: {monthly_invoice_total:.2f}")
+
+                    print(f"Current invoice amount: {current_invoice_total:.2f}")
+                    print(f"Monthly total: {monthly_invoice_total:.2f}")
+                    print(f"Salary threshold (salary * 2): {salary_threshold:.2f}")
+                    print('all invoice', current_invoice_total + monthly_invoice_total)
+
+                    # Commission calculation logic
+                    commission_calculated = False
+
+                    # Check if monthly total >= salary * 2
+                    if monthly_invoice_total == salary_threshold:
+                        move.commission_total = salary_threshold * 0.05
+                        commission_calculated = True
+                        print(f"? Commission triggered by monthly total: {move.commission_total:.2f}")
+                        print(f"   Monthly total ({monthly_invoice_total:.2f}) >= Threshold ({salary_threshold:.2f})")
+
+                    elif monthly_invoice_total > salary_threshold:
+                        move.commission_total = monthly_invoice_total * 0.05
+                        commission_calculated = True
+                        print(f"? Commission triggered by monthly total: {move.commission_total:.2f}")
+                        print(f"   Monthly total ({monthly_invoice_total:.2f}) >= Threshold ({salary_threshold:.2f})")
+
+                    # Check if current invoice alone >= salary * 2
+                    elif current_invoice_total == salary_threshold:
+                        move.commission_total = salary_threshold * 0.05
+                        commission_calculated = True
+                        print(f"? Commission triggered by single invoice: {move.commission_total:.2f}")
+                        print(f"   Invoice amount ({current_invoice_total:.2f}) >= Threshold ({salary_threshold:.2f})")
+
+
+                    elif current_invoice_total > salary_threshold:
+                        move.commission_total = (current_invoice_total + monthly_invoice_total) * 0.05
+                        commission_calculated = True
+                        print(f"? Commission triggered by single invoice: {move.commission_total:.2f}")
+                        print(f"   Invoice amount ({current_invoice_total:.2f}) >= Threshold ({salary_threshold:.2f})")
+
+                    if not commission_calculated:
+                        move.commission_total = 0.0
+                        print(f"?? No commission triggered.")
+                        print(
+                            f"   Monthly total: {monthly_invoice_total:.2f}, Invoice amount: {current_invoice_total:.2f}")
+                        print(f"   Both are less than threshold: {salary_threshold:.2f}")
+
+        return res
+
     def unlink(self):
         """Put 'invoiced' settlements associated to the invoices back in settled state."""
         self.invoice_line_ids.settlement_id.filtered(
@@ -164,12 +278,27 @@ class AccountMoveLine(models.Model):
 
     agent_ids = fields.One2many(comodel_name="account.invoice.line.agent")
     any_settled = fields.Boolean(compute="_compute_any_settled")
+    agents = fields.One2many(
+        'res.partner',
+        compute='_compute_agents_from_invoice_partner',
+        string='Agent',
+    )
 
     settlement_id = fields.Many2one(
         comodel_name="commission.settlement",
         help="Settlement that generates this invoice line",
         copy=False,
     )
+
+    @api.depends('move_id.partner_id')
+    def _compute_agents_from_invoice_partner(self):
+        for line in self:
+            if line.move_id and line.move_id.partner_id:
+                partner = line.move_id.partner_id
+                # Assume agent_ids is a One2many(Many2many) of res.partner
+                line.agents = partner.agent_ids
+            else:
+                line.agents = False
 
     @api.depends("agent_ids", "agent_ids.settled")
     def _compute_any_settled(self):
