@@ -205,22 +205,22 @@ class AccountMove(models.Model):
                         print(f"? Commission triggered by monthly total: {move.commission_total:.2f}")
                         print(f"   Monthly total ({monthly_invoice_total:.2f}) >= Threshold ({salary_threshold:.2f})")
 
-                    elif monthly_invoice_total > salary_threshold:
-                        move.commission_total = monthly_invoice_total * 0.05
+                    if monthly_invoice_total > salary_threshold:
+                        move.commission_total = (monthly_invoice_total)* 0.05
                         commission_calculated = True
                         print(f"? Commission triggered by monthly total: {move.commission_total:.2f}")
                         print(f"   Monthly total ({monthly_invoice_total:.2f}) >= Threshold ({salary_threshold:.2f})")
 
                     # Check if current invoice alone >= salary * 2
-                    elif current_invoice_total == salary_threshold:
+                    if current_invoice_total == salary_threshold and monthly_invoice_total < salary_threshold :
                         move.commission_total = salary_threshold * 0.05
                         commission_calculated = True
                         print(f"? Commission triggered by single invoice: {move.commission_total:.2f}")
                         print(f"   Invoice amount ({current_invoice_total:.2f}) >= Threshold ({salary_threshold:.2f})")
 
 
-                    elif current_invoice_total > salary_threshold:
-                        move.commission_total = (current_invoice_total + monthly_invoice_total) * 0.05
+                    if current_invoice_total > salary_threshold:
+                        move.commission_total = (current_invoice_total) * 0.05
                         commission_calculated = True
                         print(f"? Commission triggered by single invoice: {move.commission_total:.2f}")
                         print(f"   Invoice amount ({current_invoice_total:.2f}) >= Threshold ({salary_threshold:.2f})")
