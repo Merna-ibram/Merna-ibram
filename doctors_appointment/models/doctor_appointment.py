@@ -22,6 +22,7 @@
 #     is_reserved = fields.Boolean(string="محجوز؟", default=False)
 
 from datetime import datetime, timedelta
+from odoo.exceptions import ValidationError
 
 from odoo import models, fields, api
 
@@ -31,7 +32,7 @@ class DoctorAppointment(models.Model):
     _description = 'Doctor Appointment'
     _order = 'appointment_date desc'
 
-    patient_id = fields.Many2one('res.partner', string="Patient")
+    patient_id = fields.Many2one('res.partner', string="المريض")
     appointment_id = fields.Many2one(
         'patient.appointment',
         string="موعد المريض",
@@ -39,7 +40,7 @@ class DoctorAppointment(models.Model):
     )
     appointment_date = fields.Datetime(string="تاريخ ووقت الموعد")
 
-    doctors_id = fields.Many2one('hr.employee', string="الاخصائي", related='patient_id.doctor', store=True)
+    doctors_id = fields.Many2one('hr.employee', string="الأخصائي", related='patient_id.doctor', store=True)
     notes = fields.Text(string="ملاحظات")
     is_reserved = fields.Boolean(string="محجوز؟", default=False)
 
@@ -58,7 +59,7 @@ class DoctorAppointment(models.Model):
             else:
                 rec.is_this_week = False
 
-    
+
 
 
 
