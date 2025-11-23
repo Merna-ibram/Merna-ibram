@@ -1,0 +1,229 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="patient_invoice_info" inherit_id="account.report_invoice_document">
+        <xpath expr="//t[@t-call='web.external_layout']" position="replace">
+            <t t-foreach="docs" t-as="o">
+                <t t-call="web.external_layout">
+                    <t t-set="o" t-value="o.with_context(lang=lang)"/>
+
+                <style>
+                    body {
+                        font-size: 9px !important;
+                        width: 75mm;
+                        margin: 0;
+                        padding: 5px;
+                    }
+                    table {
+                        border-collapse: collapse;
+                        width: 100%;
+                    }
+                    table, th, td {
+                        border: none !important;
+                    }
+                    td, th {
+                        font-size: 9px;
+                        padding: 3px 2px;
+                        word-wrap: break-word;
+                    }
+                    th {
+                        text-align: left;
+                    }
+                    .text-center { text-align: center; }
+                    .text-end { text-align: right; }
+                    .divider {
+                        border-top: 1px dashed #000;
+                        margin: 8px 0;
+                    }
+                    .bold { font-weight: bold; }
+                </style>
+
+                <!-- Patient Info Table -->
+                <table style="width:100%; border-collapse:collapse; margin-top:5px;">
+                    <tr>
+                        <td class="text-end">Invoice</td>
+                        <td class="text-center"><span t-field="o.name"/></td>
+                        <td>الفاتورة</td>
+                    </tr>
+                    <tr>
+                        <td class="text-end">Date</td>
+                        <td class="text-center"><span t-field="o.invoice_date"/></td>
+                        <td>التاريخ</td>
+                    </tr>
+                    <tr>
+                        <td class="text-end">Patient</td>
+                        <td class="text-center"><span t-field="o.partner_id.name"/></td>
+                        <td>المريض</td>
+                    </tr>
+                    <tr>
+                        <td class="text-end">Nationality</td>
+                        <td class="text-center"><span t-field="o.partner_id.nationality_id.name"/></td>
+                        <td>الجنسية</td>
+                    </tr>
+                    <tr>
+                        <td class="text-end">ID Number</td>
+                        <td class="text-center"><span t-field="o.partner_id.identity_info"/></td>
+                        <td>رقم الهوية</td>
+                    </tr>
+                    <tr>
+                        <td class="text-end">Doctor</td>
+                        <td class="text-center"><span t-field="o.partner_id.doctor.name"/></td>
+                        <td>الطبيب</td>
+                    </tr>
+                </table>
+
+                <div class="divider"></div>
+
+                <!-- Service Description Header -->
+                <div style="text-align:center; font-weight:bold; margin:5px 0;">
+                    وصف الخدمة | Service Description
+                </div>
+
+                <!-- Service Table -->
+                <table style="width:100%; border-collapse:collapse; margin-top:5px;">
+                    <thead>
+                        <tr>
+                            <th class="text-center">رمز الخدمة<br/>Service code</th>
+                            <th class="text-center">المبلغ<br/>Amount</th>
+                            <th class="text-center">الكمية<br/>Qty</th>
+                            <th class="text-center">المجموع<br/>Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <t t-foreach="o.invoice_line_ids" t-as="line">
+                            <tr style="text-align:center; font-size:7px;">
+                                <td style="padding:4px; text-align:left;">
+                                    <t t-esc="line.name or line.product_id.name"/>
+                                </td>
+                                <td style="padding:4px;">
+                                    <t t-esc="line.price_unit" t-options="{'widget':'monetary','display_currency':o.currency_id}"/>
+                                </td>
+                                <td style="padding:4px;"><t t-esc="line.quantity"/></td>
+                                <td style="padding:4px;">
+                                    <t t-esc="line.price_total" t-options="{'widget':'monetary','display_currency':o.currency_id}"/>
+                                </td>
+                            </tr>
+                        </t>
+                    </tbody>
+                </table>
+
+                <div class="divider"></div>
+
+                <!-- حساب تفاصيل الدفع الخاصة بهذه الفاتورة فقط -->
+                <t t-set="posted_payments" t-value="o._get_reconciled_payments().filtered(lambda p: p.state == 'posted')"/>
+                <t t-set="total_paid" t-value="sum(posted_payments.mapped('amount'))"/>
+                <t t-set="remaining_amount" t-value="o.amount_residual"/>
+
+                <!-- حساب طرق الدفع حسب دفتر اليومية لهذه الفاتورة فقط -->
+                <t t-set="cash_total" t-value="0.0"/>
+                <t t-set="card_total" t-value="0.0"/>
+                <t t-set="span_total" t-value="0.0"/>
+
+                <t t-foreach="posted_payments" t-as="payment">
+                    <t t-set="journal_name" t-value="(payment.journal_id.name or '').lower()"/>
+                    <t t-set="amount" t-value="payment.amount"/>
+
+                    <!-- بطاقة: بنك، ماستر، حوالة، فيزا، كارد -->
+                    <t t-if="'بنك' in journal_name or 'bank' in journal_name or 'ماستر' in journal_name or 'master' in journal_name or 'حوالة' in journal_name or 'transfer' in journal_name or 'فيزا' in journal_name or 'visa' in journal_name or 'كارد' in journal_name or 'card' in journal_name">
+                        <t t-set="card_total" t-value="card_total + amount"/>
+                    </t>
+
+                    <!-- كاش: نقدي -->
+                    <t t-elif="'نقدي' in journal_name or 'نقدى' in journal_name or 'cash' in journal_name or 'نقد' in journal_name">
+                        <t t-set="cash_total" t-value="cash_total + amount"/>
+                    </t>
+
+                    <!-- شبكة: أي شيء آخر -->
+                    <t t-else="">
+                        <t t-set="span_total" t-value="span_total + amount"/>
+                    </t>
+                </t>
+
+                <table style="width:100%; border-collapse:collapse; margin-top:5px;">
+                    <!-- المجموع -->
+                    <tr>
+                        <td style="width:40%; text-align:left;">Total</td>
+                        <td style="width:20%; text-align:center;"><t t-esc="o.amount_untaxed" t-options="{'widget':'monetary','display_currency':o.currency_id}"/></td>
+                        <td style="width:40%; text-align:right;">المجموع</td>
+                    </tr>
+
+                    <!-- الخصم -->
+                    <tr>
+                        <td style="text-align:left;">Discount</td>
+                        <td style="text-align:center;"><t t-esc="o.amount_discount or 0.0" t-options="{'widget':'monetary','display_currency':o.currency_id}"/></td>
+                        <td style="text-align:right;">الخصم</td>
+                    </tr>
+
+                    <!-- الصافي بعد الخصم -->
+                    <tr>
+                        <td style="text-align:left;">Net Amount</td>
+                        <td style="text-align:center;"><t t-esc="o.amount_untaxed - (o.amount_discount or 0.0)" t-options="{'widget':'monetary','display_currency':o.currency_id}"/></td>
+                        <td style="text-align:right;">الصافي </td>
+                    </tr>
+
+                    <!-- ضريبة القيمة المضافة -->
+                    <tr>
+                        <td style="text-align:left;">VAT 15%</td>
+                        <td style="text-align:center;"><t t-esc="o.amount_tax" t-options="{'widget':'monetary','display_currency':o.currency_id}"/></td>
+                        <td style="text-align:right;">ضريبة القيمة المضافة</td>
+                    </tr>
+
+                    <!-- المبلغ الكلي بعد الضريبة -->
+                    <tr>
+                        <td style="text-align:left;">Grand Total</td>
+                        <td style="text-align:center;"><t t-esc="o.amount_total" t-options="{'widget':'monetary','display_currency':o.currency_id}"/></td>
+                        <td style="text-align:right;">المبلغ الكلي</td>
+                    </tr>
+
+                    <!-- المبلغ المدفوع -->
+                    <tr>
+                        <td style="text-align:left;">Paid</td>
+                        <td style="text-align:center;"><t t-esc="total_paid" t-options="{'widget':'monetary','display_currency':o.currency_id}"/></td>
+                        <td style="text-align:right;">المدفوع</td>
+                    </tr>
+
+                    <!-- المتبقي -->
+                    <tr>
+                        <td style="text-align:left;">Balance</td>
+                        <td style="text-align:center;"><t t-esc="remaining_amount" t-options="{'widget':'monetary','display_currency':o.currency_id}"/></td>
+                        <td style="text-align:right;">المتبقي</td>
+                    </tr>
+                </table>
+
+                <div class="divider"></div>
+
+                <!-- طريقة الدفع -->
+                <table style="width:100%; border-collapse:collapse; margin-top:5px;">
+                    <!-- كاش -->
+                    <tr>
+                        <td style="text-align:right;">Cash</td>
+                        <td style="text-align:center;"><t t-esc="cash_total" t-options="{'widget':'monetary','display_currency':o.currency_id}"/></td>
+                        <td style="text-align:left;">كاش</td>
+                    </tr>
+
+                    <!-- شبكة -->
+                    <tr>
+                        <td style="text-align:right;">Span</td>
+                        <td style="text-align:center;"><t t-esc="span_total" t-options="{'widget':'monetary','display_currency':o.currency_id}"/></td>
+                        <td style="text-align:left;">شبكة</td>
+                    </tr>
+
+                    <!-- بطاقة -->
+                    <tr>
+                        <td style="text-align:right;">C.Card</td>
+                        <td style="text-align:center;"><t t-esc="card_total" t-options="{'widget':'monetary','display_currency':o.currency_id}"/></td>
+                        <td style="text-align:left;">بطاقة</td>
+                    </tr>
+                </table>
+
+                <div style="text-align:center; margin-top:10px;">
+                    <t t-if="o.qr_code">
+                        <img t-att-src="'data:image/png;base64,%s' % o.qr_code.decode()"
+                             style="width:120px; height:120px;"/>
+                    </t>
+                </div>
+
+                </t>
+            </t>
+        </xpath>
+    </template>
+</odoo>

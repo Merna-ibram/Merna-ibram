@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!-- Invoice Format -->
+        <record id="report_qweb_paperformat_invoice" model="report.paperformat">
+            <field name="name">Account Invoice Report</field>
+            <field name="default" eval="False"/>
+            <field name="format">custom</field>
+            <field name="page_height">130</field>
+            <field name="page_width">75</field>
+            <field name="orientation">Portrait</field>
+            <field name="margin_top">0</field>
+            <field name="margin_bottom">6</field>
+            <field name="margin_left">0</field>
+            <field name="margin_right">0</field>
+            <field name="header_line" eval="False"/>
+            <field name="header_spacing">0</field>
+            <field name="dpi">96</field>
+            <field name="disable_shrinking" eval="True"/>
+        </record>
+
+        <record id="account.account_invoices" model="ir.actions.report">
+            <field name="paperformat_id" ref="report_qweb_paperformat_invoice"/>
+            <field name="print_report_name">'Invoice - %s' % (object.name)</field>
+        </record>
+
+        <!-- Sale Order Format -->
+        <record id="report_qweb_paperformat_sale" model="report.paperformat">
+            <field name="name">Sale Order Report</field>
+            <field name="default" eval="False"/>
+            <field name="format">custom</field>
+            <field name="page_height">130</field>
+            <field name="page_width">75</field>
+            <field name="orientation">Portrait</field>
+            <field name="margin_top">0</field>
+            <field name="margin_bottom">0</field>
+            <field name="margin_left">0</field>
+            <field name="margin_right">0</field>
+            <field name="header_line" eval="False"/>
+            <field name="header_spacing">0</field>
+            <field name="dpi">96</field>
+            <field name="disable_shrinking" eval="True"/>
+        </record>
+
+        <record id="sale.action_report_saleorder" model="ir.actions.report">
+            <field name="paperformat_id" ref="report_qweb_paperformat_sale"/>
+            <field name="print_report_name">'Sale Order - %s' % (object.name)</field>
+        </record>
+
+        <!-- Purchase Order Format -->
+        <record id="report_qweb_paperformat_purchase" model="report.paperformat">
+            <field name="name">Purchase Order Report</field>
+            <field name="default" eval="False"/>
+            <field name="format">custom</field>
+            <field name="page_height">130</field>
+            <field name="page_width">75</field>
+            <field name="orientation">Portrait</field>
+            <field name="margin_top">0</field>
+            <field name="margin_bottom">0</field>
+            <field name="margin_left">0</field>
+            <field name="margin_right">0</field>
+            <field name="header_line" eval="False"/>
+            <field name="header_spacing">0</field>
+            <field name="dpi">96</field>
+            <field name="disable_shrinking" eval="True"/>
+        </record>
+
+        <record id="purchase.action_report_purchase_order" model="ir.actions.report">
+            <field name="paperformat_id" ref="report_qweb_paperformat_purchase"/>
+            <field name="print_report_name">'Purchase Order - %s' % (object.name)</field>
+        </record>
+
+        <!-- Delivery Slip / Picking Format -->
+        <record id="report_qweb_paperformat_picking" model="report.paperformat">
+            <field name="name">Stock Picking Report</field>
+            <field name="default" eval="False"/>
+            <field name="format">custom</field>
+            <field name="page_height">130</field>
+            <field name="page_width">75</field>
+            <field name="orientation">Portrait</field>
+            <field name="margin_top">0</field>
+            <field name="margin_bottom">0</field>
+            <field name="margin_left">0</field>
+            <field name="margin_right">0</field>
+            <field name="header_line" eval="False"/>
+            <field name="header_spacing">0</field>
+            <field name="dpi">96</field>
+            <field name="disable_shrinking" eval="True"/>
+        </record>
+
+        <record id="stock.action_report_delivery" model="ir.actions.report">
+            <field name="paperformat_id" ref="report_qweb_paperformat_picking"/>
+            <field name="print_report_name">'Delivery Slip - %s' % (object.name)</field>
+        </record>
+
+    </data>
+</odoo>
+
+
+<!--<?xml version="1.0" encoding="utf-8"?>-->
+<!--<odoo>-->
+<!--    <data>-->
+
+<!--        &lt;!&ndash; Paperformat حراري لجميع التقارير &ndash;&gt;-->
+<!--        <record id="report_qweb_paperformat_receipt" model="report.paperformat">-->
+<!--            <field name="name">Receipt Thermal Report</field>-->
+<!--            <field name="default" eval="False"/>-->
+<!--            <field name="format">custom</field>-->
+<!--            <field name="page_height">130</field>-->
+<!--            <field name="page_width">75</field>-->
+<!--            <field name="orientation">Portrait</field>-->
+<!--            <field name="margin_top">0</field>-->
+<!--            <field name="margin_bottom">6</field>-->
+<!--            <field name="margin_left">0</field>-->
+<!--            <field name="margin_right">0</field>-->
+<!--            <field name="header_line" eval="False"/>-->
+<!--            <field name="header_spacing">0</field>-->
+<!--            <field name="dpi">96</field>-->
+<!--            <field name="disable_shrinking" eval="True"/>-->
+<!--        </record>-->
+
+<!--        &lt;!&ndash; Invoice Action &ndash;&gt;-->
+<!--        <record id="action_print_receipt_invoice" model="ir.actions.report">-->
+<!--            <field name="name">Print Receipt Invoice</field>-->
+<!--            <field name="model">account.move</field>-->
+<!--            <field name="report_type">qweb-pdf</field>-->
+<!--            <field name="report_name">your_module_name.invoice_receipt_report</field>-->
+<!--            <field name="paperformat_id" ref="report_qweb_paperformat_receipt"/>-->
+<!--            <field name="print_report_name">'Receipt Invoice - %s' % (object.name)</field>-->
+<!--        </record>-->
+
+<!--        &lt;!&ndash; Sale Order Action &ndash;&gt;-->
+<!--        <record id="action_print_receipt_sale" model="ir.actions.report">-->
+<!--            <field name="name">Print Receipt Sale</field>-->
+<!--            <field name="model">sale.order</field>-->
+<!--            <field name="report_type">qweb-pdf</field>-->
+<!--            <field name="report_name">your_module_name.sale_order_receipt_report</field>-->
+<!--            <field name="paperformat_id" ref="report_qweb_paperformat_receipt"/>-->
+<!--            <field name="print_report_name">'Receipt Sale - %s' % (object.name)</field>-->
+<!--        </record>-->
+
+<!--        &lt;!&ndash; Purchase Order Action &ndash;&gt;-->
+<!--        <record id="action_print_receipt_purchase" model="ir.actions.report">-->
+<!--            <field name="name">Print Receipt Purchase</field>-->
+<!--            <field name="model">purchase.order</field>-->
+<!--            <field name="report_type">qweb-pdf</field>-->
+<!--            <field name="report_name">your_module_name.purchase_order_receipt_report</field>-->
+<!--            <field name="paperformat_id" ref="report_qweb_paperformat_receipt"/>-->
+<!--            <field name="print_report_name">'Receipt Purchase - %s' % (object.name)</field>-->
+<!--        </record>-->
+
+<!--        &lt;!&ndash; Delivery / Picking Action &ndash;&gt;-->
+<!--        <record id="action_print_receipt_picking" model="ir.actions.report">-->
+<!--            <field name="name">Print Receipt Picking</field>-->
+<!--            <field name="model">stock.picking</field>-->
+<!--            <field name="report_type">qweb-pdf</field>-->
+<!--            <field name="report_name">your_module_name.picking_receipt_report</field>-->
+<!--            <field name="paperformat_id" ref="report_qweb_paperformat_receipt"/>-->
+<!--            <field name="print_report_name">'Receipt Picking - %s' % (object.name)</field>-->
+<!--        </record>-->
+
+<!--    </data>-->
+<!--</odoo>-->

@@ -1,0 +1,510 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="sale_quotation_thermal_receipt" inherit_id="sale.report_saleorder_document">
+        <xpath expr="." position="replace">
+            <t t-call="web.external_layout" t-options="{'display_header': False}">
+                <t t-set="doc" t-value="doc.with_context(lang=doc.partner_id.lang)"/>
+                <style>
+                    @page { size: 75mm auto; margin: 0; padding: 0; }
+                    .receipt { width: 75mm; margin: 0; padding: 0.5mm; font-family: monospace; font-size: 8px; line-height: 1.1; }
+                    .center { text-align: center; } .right { text-align: right; } .bold { font-weight: bold; }
+                    .line { border-top: 1px dashed black; margin: 1mm 0; height: 0; }
+                    .solid-line { border-top: 1px solid black; margin: 1mm 0; height: 0; }
+                    .doc-title { text-align: center; font-weight: bold; font-size: 9px; margin: 1mm 0; }
+                    .info-table { width: 100%; border-collapse: collapse; margin: 1mm 0; }
+                    .info-table td { padding: 0 1mm; font-size: 8px; vertical-align: top; }
+                    .info-table .label { width: 20mm; font-weight: bold; }
+                    .products-table { width: 100%; border-collapse: collapse; font-size: 7px; margin: 1mm 0; }
+                    .products-table th, .products-table td { padding: 0.5mm; text-align: left; line-height: 1.1; }
+                    .products-table th { border-bottom: 1px solid black; font-weight: bold; }
+                    .products-table .qty, .products-table .price, .products-table .total { text-align: right; }
+                    .totals-table { width: 100%; border-collapse: collapse; font-size: 8px; margin: 1mm 0; }
+                    .totals-table td { padding: 0.5mm 1mm; }
+                    .totals-table .total-label { font-weight: bold; }
+                    .totals-table .total-amount { text-align: right; font-weight: bold; }
+                    .footer { text-align: center; font-size: 7px; margin-top: 2mm; border-top: 1px dashed black; padding-top: 1mm; }
+                </style>
+
+                <div class="receipt">
+<!--                    <div class="center bold" t-field="doc.company_id.name"/>-->
+<!--                    <div class="center" t-if="doc.company_id.phone">Tel: <span t-field="doc.company_id.phone"/></div>-->
+<!--                    <div class="line"></div>-->
+
+                    <div class="doc-title">
+                        <t t-if="doc.state in ['draft','sent']">QUOTATION</t>
+                        <t t-else="">SALES ORDER</t>
+                        <br/><span t-field="doc.name"/>
+                    </div>
+
+                    <table class="info-table">
+                        <tr><td class="label">Date:</td><td><span t-field="doc.date_order" t-options="{'widget':'date'}"/></td></tr>
+                        <tr><td class="label">Customer:</td><td><span t-field="doc.partner_id.name"/></td></tr>
+                        <tr t-if="doc.partner_id.phone"><td class="label">Phone:</td><td><span t-field="doc.partner_id.phone"/></td></tr>
+                        <tr t-if="doc.client_order_ref"><td class="label">Ref:</td><td><span t-field="doc.client_order_ref"/></td></tr>
+                    </table>
+
+                    <div class="line"></div>
+
+                    <table class="products-table">
+                        <thead>
+                            <tr><th>Item</th><th class="qty">Qty</th><th class="price">Price</th><th class="total">Total</th></tr>
+                        </thead>
+                        <tbody>
+                            <t t-foreach="doc.order_line" t-as="line">
+                                <tr t-if="not line.display_type">
+                                    <td><span t-field="line.name"/></td>
+                                    <td class="qty" t-esc="int(line.product_uom_qty)"/>
+                                    <td class="price" t-esc="'%.2f' % line.price_unit"/>
+                                    <td class="total" t-esc="'%.2f' % line.price_subtotal"/>
+                                </tr>
+                            </t>
+                        </tbody>
+                    </table>
+
+                    <div class="solid-line"></div>
+
+                    <table class="totals-table">
+                        <tr><td class="total-label">Subtotal:</td><td class="total-amount" t-esc="'%.2f' % doc.amount_untaxed"/></tr>
+                        <tr t-if="doc.amount_tax"><td class="total-label">Tax:</td><td class="total-amount" t-esc="'%.2f' % doc.amount_tax"/></tr>
+                        <tr><td class="total-label">TOTAL:</td><td class="total-amount" t-esc="'%.2f' % doc.amount_total"/></tr>
+                    </table>
+
+                    <div class="footer">Thank you!</div>
+                </div>
+            </t>
+        </xpath>
+    </template>
+</odoo>
+
+<!--<?xml version="1.0" encoding="utf-8"?>-->
+<!--<odoo>-->
+<!--    <template id="sale_quotation_receipt_report" inherit_id="sale.report_saleorder_document">-->
+<!--        <xpath expr="." position="replace">-->
+<!--            <t t-call="web.external_layout" t-options="{'display_header': False}">-->
+<!--                <t t-set="doc" t-value="doc.with_context(lang=doc.partner_id.lang)"/>-->
+
+<!--                <style>-->
+<!--                    @page {-->
+<!--                        size: 75mm auto;-->
+<!--                        margin: 0;-->
+<!--                        padding: 0;-->
+<!--                    }-->
+
+<!--                    .receipt {-->
+<!--                        width: 75mm;-->
+<!--                        margin: 0;-->
+<!--                        padding: 1mm;-->
+<!--                        font-family: monospace;-->
+<!--                        font-size: 9px;-->
+<!--                        line-height: 1.1;-->
+<!--                        background: white;-->
+<!--                    }-->
+
+<!--                    .center { text-align: center; }-->
+<!--                    .right { text-align: right; }-->
+<!--                    .bold { font-weight: bold; }-->
+
+<!--                    .logo {-->
+<!--                        max-width: 18mm;-->
+<!--                        max-height: 12mm;-->
+<!--                        margin: 0 auto 1mm;-->
+<!--                        display: block;-->
+<!--                    }-->
+
+<!--                    .company-name {-->
+<!--                        font-size: 11px;-->
+<!--                        font-weight: bold;-->
+<!--                        text-align: center;-->
+<!--                        margin-bottom: 1mm;-->
+<!--                        line-height: 1.1;-->
+<!--                    }-->
+
+<!--                    .company-info {-->
+<!--                        font-size: 8px;-->
+<!--                        text-align: center;-->
+<!--                        margin-bottom: 2mm;-->
+<!--                        line-height: 1.1;-->
+<!--                    }-->
+
+<!--                    .line {-->
+<!--                        border-top: 1px dashed black;-->
+<!--                        margin: 2mm 0;-->
+<!--                        height: 0;-->
+<!--                    }-->
+
+<!--                    .solid-line {-->
+<!--                        border-top: 1px solid black;-->
+<!--                        margin: 2mm 0;-->
+<!--                        height: 0;-->
+<!--                    }-->
+
+<!--                    .doc-title {-->
+<!--                        text-align: center;-->
+<!--                        font-weight: bold;-->
+<!--                        font-size: 10px;-->
+<!--                        margin: 2mm 0;-->
+<!--                        line-height: 1.1;-->
+<!--                    }-->
+
+<!--                    .info-table {-->
+<!--                        width: 100%;-->
+<!--                        margin: 2mm 0;-->
+<!--                        border-collapse: collapse;-->
+<!--                    }-->
+
+<!--                    .info-table td {-->
+<!--                        padding: 0.5mm 0;-->
+<!--                        font-size: 8px;-->
+<!--                        vertical-align: top;-->
+<!--                        line-height: 1.1;-->
+<!--                    }-->
+
+<!--                    .info-table .label {-->
+<!--                        width: 22mm;-->
+<!--                        font-weight: bold;-->
+<!--                    }-->
+
+<!--                    .products-table {-->
+<!--                        width: 100%;-->
+<!--                        border-collapse: collapse;-->
+<!--                        margin: 2mm 0;-->
+<!--                        font-size: 7px;-->
+<!--                    }-->
+
+<!--                    .products-table th {-->
+<!--                        border-bottom: 1px solid black;-->
+<!--                        padding: 1mm 0.5mm;-->
+<!--                        text-align: left;-->
+<!--                        font-weight: bold;-->
+<!--                        font-size: 8px;-->
+<!--                        line-height: 1;-->
+<!--                    }-->
+
+<!--                    .products-table td {-->
+<!--                        padding: 0.5mm;-->
+<!--                        border-bottom: 1px dotted #999;-->
+<!--                        vertical-align: top;-->
+<!--                        line-height: 1.1;-->
+<!--                    }-->
+
+<!--                    .products-table .qty-col,-->
+<!--                    .products-table .price-col,-->
+<!--                    .products-table .disc-col,-->
+<!--                    .products-table .total-col {-->
+<!--                        text-align: right;-->
+<!--                        width: 10mm;-->
+<!--                    }-->
+
+<!--                    .products-table .disc-col {-->
+<!--                        width: 8mm;-->
+<!--                    }-->
+
+<!--                    .products-table .desc-col {-->
+<!--                        width: auto;-->
+<!--                        font-weight: bold;-->
+<!--                        font-size: 8px;-->
+<!--                    }-->
+
+<!--                    .totals-table {-->
+<!--                        width: 100%;-->
+<!--                        margin-top: 2mm;-->
+<!--                        font-size: 9px;-->
+<!--                        border-collapse: collapse;-->
+<!--                    }-->
+
+<!--                    .totals-table td {-->
+<!--                        padding: 0.5mm 0;-->
+<!--                        line-height: 1.1;-->
+<!--                    }-->
+
+<!--                    .totals-table .total-label {-->
+<!--                        font-weight: bold;-->
+<!--                    }-->
+
+<!--                    .totals-table .total-amount {-->
+<!--                        text-align: right;-->
+<!--                        font-weight: bold;-->
+<!--                    }-->
+
+<!--                    .grand-total {-->
+<!--                        border-top: 1px solid black;-->
+<!--                        font-size: 10px;-->
+<!--                        font-weight: bold;-->
+<!--                        padding: 1mm 0;-->
+<!--                    }-->
+
+<!--                    .footer {-->
+<!--                        text-align: center;-->
+<!--                        font-size: 7px;-->
+<!--                        margin-top: 3mm;-->
+<!--                        border-top: 1px dashed black;-->
+<!--                        padding-top: 1mm;-->
+<!--                        line-height: 1.1;-->
+<!--                    }-->
+
+<!--                    /* إخفاء عمود الخصم إذا لم يكن موجود */-->
+<!--                    .no-discount .disc-header,-->
+<!--                    .no-discount .disc-cell {-->
+<!--                        display: none;-->
+<!--                    }-->
+
+<!--                    /* تقليل المساحات للطباعة */-->
+<!--                    @media print {-->
+<!--                        .receipt {-->
+<!--                            padding: 0.5mm;-->
+<!--                        }-->
+<!--                        .line, .solid-line {-->
+<!--                            margin: 1mm 0;-->
+<!--                        }-->
+<!--                        .info-table, .products-table, .totals-table {-->
+<!--                            margin: 1mm 0;-->
+<!--                        }-->
+<!--                        .doc-title {-->
+<!--                            margin: 1mm 0;-->
+<!--                        }-->
+<!--                        .company-info {-->
+<!--                            margin-bottom: 1mm;-->
+<!--                        }-->
+<!--                        .footer {-->
+<!--                            margin-top: 2mm;-->
+<!--                        }-->
+<!--                    }-->
+<!--                </style>-->
+
+<!--                <t t-set="has_discount" t-value="any(line.discount for line in doc.order_line)"/>-->
+
+<!--                <div t-attf-class="receipt #{'' if has_discount else 'no-discount'}">-->
+
+<!--                    &lt;!&ndash; الشعار واسم الشركة &ndash;&gt;-->
+<!--                    <img t-if="doc.company_id.logo"-->
+<!--                         t-att-src="image_data_uri(doc.company_id.logo)"-->
+<!--                         class="logo"/>-->
+
+<!--                    <div class="company-name"><span t-field="doc.company_id.name"/></div>-->
+
+<!--                    <div class="company-info">-->
+<!--                        <div t-if="doc.company_id.street">-->
+<!--                            <span t-field="doc.company_id.street"/>-->
+<!--                            <span t-if="doc.company_id.city">, <t t-esc="doc.company_id.city"/></span>-->
+<!--                        </div>-->
+<!--                        <div t-if="doc.company_id.phone">-->
+<!--                            Tel: <span t-field="doc.company_id.phone"/>-->
+<!--                        </div>-->
+<!--                    </div>-->
+
+<!--                    <div class="line"></div>-->
+
+<!--                    &lt;!&ndash; عنوان الوثيقة &ndash;&gt;-->
+<!--                    <div class="doc-title">-->
+<!--                        <t t-if="not (env.context.get('proforma', False) or is_pro_forma)">-->
+<!--                            <span t-if="doc.state not in ['draft','sent']">SALES ORDER</span>-->
+<!--                            <span t-elif="doc.state in ['draft','sent']">QUOTATION</span>-->
+<!--                        </t>-->
+<!--                        <t t-elif="env.context.get('proforma', False) or is_pro_forma">-->
+<!--                            PRO-FORMA INVOICE-->
+<!--                        </t>-->
+<!--                        <br/>-->
+<!--                        <span t-field="doc.name"/>-->
+<!--                    </div>-->
+
+<!--                    &lt;!&ndash; معلومات الطلب &ndash;&gt;-->
+<!--                    <table class="info-table">-->
+<!--                        <tr t-if="doc.date_order">-->
+<!--                            <td class="label">Date:</td>-->
+<!--                            <td><span t-field="doc.date_order" t-options="{'widget': 'date'}"/></td>-->
+<!--                        </tr>-->
+<!--                        <tr t-if="doc.partner_id">-->
+<!--                            <td class="label">Customer:</td>-->
+<!--                            <td><span t-field="doc.partner_id.name"/></td>-->
+<!--                        </tr>-->
+<!--                        <tr t-if="doc.partner_id.phone">-->
+<!--                            <td class="label">Phone:</td>-->
+<!--                            <td><span t-field="doc.partner_id.phone"/></td>-->
+<!--                        </tr>-->
+<!--                        <tr t-if="doc.client_order_ref">-->
+<!--                            <td class="label">Reference:</td>-->
+<!--                            <td><span t-field="doc.client_order_ref"/></td>-->
+<!--                        </tr>-->
+<!--                        <tr t-if="doc.user_id">-->
+<!--                            <td class="label">Salesperson:</td>-->
+<!--                            <td><span t-field="doc.user_id.name"/></td>-->
+<!--                        </tr>-->
+<!--                    </table>-->
+
+<!--                    <div class="line"></div>-->
+
+<!--                    &lt;!&ndash; جدول المنتجات &ndash;&gt;-->
+<!--                    <table class="products-table">-->
+<!--                        <thead>-->
+<!--                            <tr>-->
+<!--                                <th class="desc-col">Item</th>-->
+<!--                                <th class="qty-col">Qty</th>-->
+<!--                                <th class="price-col">Price</th>-->
+<!--                                <th class="disc-col disc-header" t-if="has_discount">Disc%</th>-->
+<!--                                <th class="total-col">Total</th>-->
+<!--                            </tr>-->
+<!--                        </thead>-->
+<!--                        <tbody>-->
+<!--                            <t t-foreach="doc.order_line" t-as="line">-->
+<!--                                <tr t-if="not line.display_type and line.product_uom_qty">-->
+<!--                                    <td class="desc-col"><span t-field="line.name"/></td>-->
+<!--                                    <td class="qty-col" t-esc="int(line.product_uom_qty)"/>-->
+<!--                                    <td class="price-col" t-esc="'%.2f' % line.price_unit"/>-->
+<!--                                    <td class="disc-col disc-cell" t-if="has_discount">-->
+<!--                                        <span t-if="line.discount" t-esc="'%.0f%%' % line.discount"/>-->
+<!--                                        <span t-else="">-</span>-->
+<!--                                    </td>-->
+<!--                                    <td class="total-col" t-esc="'%.2f' % line.price_subtotal"/>-->
+<!--                                </tr>-->
+<!--                            </t>-->
+<!--                        </tbody>-->
+<!--                    </table>-->
+
+<!--                    <div class="solid-line"></div>-->
+
+<!--                    &lt;!&ndash; الإجماليات &ndash;&gt;-->
+<!--                    <table class="totals-table">-->
+<!--                        <tr>-->
+<!--                            <td class="total-label">Subtotal:</td>-->
+<!--                            <td class="total-amount" t-esc="'%.2f' % doc.amount_untaxed"/>-->
+<!--                        </tr>-->
+<!--                        <tr t-if="doc.amount_tax">-->
+<!--                            <td class="total-label">Tax:</td>-->
+<!--                            <td class="total-amount" t-esc="'%.2f' % doc.amount_tax"/>-->
+<!--                        </tr>-->
+<!--                        <tr class="grand-total">-->
+<!--                            <td class="total-label">TOTAL:</td>-->
+<!--                            <td class="total-amount" t-esc="'%.2f' % doc.amount_total"/>-->
+<!--                        </tr>-->
+<!--                    </table>-->
+
+<!--                    &lt;!&ndash; الفوتر &ndash;&gt;-->
+<!--                    <div class="footer">-->
+<!--                        <div>Thank you for your business!</div>-->
+<!--                        <div style="margin-top: 2mm;">-->
+<!--                            Printed: <span t-esc="context_timestamp(datetime.datetime.now()).strftime('%d/%m/%Y %H:%M')"/>-->
+<!--                        </div>-->
+<!--                    </div>-->
+
+<!--                </div>-->
+<!--            </t>-->
+<!--        </xpath>-->
+<!--    </template>-->
+<!--</odoo>-->
+
+
+
+
+<!--<?xml version="1.0" encoding="utf-8"?>-->
+<!--<odoo>-->
+<!--    <data>-->
+
+<!--        &lt;!&ndash; ============================= &ndash;&gt;-->
+<!--        &lt;!&ndash; Sale Order Receipt (Text) &ndash;&gt;-->
+<!--        &lt;!&ndash; ============================= &ndash;&gt;-->
+<!--        <record id="action_print_receipt_sale" model="ir.actions.report">-->
+<!--            <field name="name">Print Receipt Sale</field>-->
+<!--            <field name="model">sale.order</field>-->
+<!--            <field name="report_type">qweb-text</field>-->
+<!--            <field name="report_name">your_module_name.sale_order_receipt_text</field>-->
+<!--        </record>-->
+
+<!--        <template id="sale_order_receipt_text">-->
+<!--            <t t-foreach="docs" t-as="o">-->
+<!--Sale Receipt-->
+<!-- -&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;-->
+<!--Customer: <t t-esc="o.partner_id.name"/>-->
+<!--Date: <t t-esc="o.date_order"/>-->
+<!-- -&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;-->
+<!--Products:-->
+<!--<t t-foreach="o.order_line" t-as="line">-->
+<!-- - <t t-esc="line.product_id.name"/> x <t t-esc="line.product_uom_qty"/> : <t t-esc="line.price_subtotal"/>-->
+<!--</t>-->
+<!-- -&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;-->
+<!--Total: <t t-esc="o.amount_total"/>-->
+<!--Thank you!-->
+<!--            </t>-->
+<!--        </template>-->
+
+<!--        &lt;!&ndash; ============================= &ndash;&gt;-->
+<!--        &lt;!&ndash; Invoice Receipt (Text) &ndash;&gt;-->
+<!--        &lt;!&ndash; ============================= &ndash;&gt;-->
+<!--        <record id="action_print_receipt_invoice" model="ir.actions.report">-->
+<!--            <field name="name">Print Receipt Invoice</field>-->
+<!--            <field name="model">account.move</field>-->
+<!--            <field name="report_type">qweb-text</field>-->
+<!--            <field name="report_name">your_module_name.invoice_receipt_text</field>-->
+<!--        </record>-->
+
+<!--        <template id="invoice_receipt_text">-->
+<!--            <t t-foreach="docs" t-as="o">-->
+<!--Invoice Receipt-->
+<!-- -&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;-->
+<!--Customer: <t t-esc="o.partner_id.name"/>-->
+<!--Date: <t t-esc="o.invoice_date"/>-->
+<!-- -&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;-->
+<!--Products:-->
+<!--<t t-foreach="o.invoice_line_ids" t-as="line">-->
+<!-- - <t t-esc="line.product_id.name"/> x <t t-esc="line.quantity"/> : <t t-esc="line.price_subtotal"/>-->
+<!--</t>-->
+<!-- -&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;-->
+<!--Total: <t t-esc="o.amount_total"/>-->
+<!--Thank you!-->
+<!--            </t>-->
+<!--        </template>-->
+
+<!--        &lt;!&ndash; ============================= &ndash;&gt;-->
+<!--        &lt;!&ndash; Purchase Order Receipt (Text) &ndash;&gt;-->
+<!--        &lt;!&ndash; ============================= &ndash;&gt;-->
+<!--        <record id="action_print_receipt_purchase" model="ir.actions.report">-->
+<!--            <field name="name">Print Receipt Purchase</field>-->
+<!--            <field name="model">purchase.order</field>-->
+<!--            <field name="report_type">qweb-text</field>-->
+<!--            <field name="report_name">your_module_name.purchase_order_receipt_text</field>-->
+<!--        </record>-->
+
+<!--        <template id="purchase_order_receipt_text">-->
+<!--            <t t-foreach="docs" t-as="o">-->
+<!--Purchase Receipt-->
+<!-- -&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;-->
+<!--Vendor: <t t-esc="o.partner_id.name"/>-->
+<!--Date: <t t-esc="o.date_order"/>-->
+<!-- -&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;-->
+<!--Products:-->
+<!--<t t-foreach="o.order_line" t-as="line">-->
+<!-- - <t t-esc="line.product_id.name"/> x <t t-esc="line.product_qty"/> : <t t-esc="line.price_subtotal"/>-->
+<!--</t>-->
+<!-- -&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;-->
+<!--Total: <t t-esc="o.amount_total"/>-->
+<!--Thank you!-->
+<!--            </t>-->
+<!--        </template>-->
+
+<!--        &lt;!&ndash; ============================= &ndash;&gt;-->
+<!--        &lt;!&ndash; Delivery / Picking Receipt (Text) &ndash;&gt;-->
+<!--        &lt;!&ndash; ============================= &ndash;&gt;-->
+<!--        <record id="action_print_receipt_picking" model="ir.actions.report">-->
+<!--            <field name="name">Print Receipt Picking</field>-->
+<!--            <field name="model">stock.picking</field>-->
+<!--            <field name="report_type">qweb-text</field>-->
+<!--            <field name="report_name">your_module_name.picking_receipt_text</field>-->
+<!--        </record>-->
+
+<!--        <template id="picking_receipt_text">-->
+<!--            <t t-foreach="docs" t-as="o">-->
+<!--Delivery Receipt-->
+<!-- -&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;-->
+<!--Customer: <t t-esc="o.partner_id.name if hasattr(o,'partner_id') else o.partner_id.name"/>-->
+<!--Date: <t t-esc="o.scheduled_date"/>-->
+<!-- -&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;-->
+<!--Products:-->
+<!--<t t-foreach="o.move_line_ids" t-as="line">-->
+<!-- - <t t-esc="line.product_id.name"/> x <t t-esc="line.quantity_done"/>-->
+<!--</t>-->
+<!-- -&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;-->
+<!--Thank you!-->
+<!--            </t>-->
+<!--        </template>-->
+
+<!--    </data>-->
+<!--</odoo>-->

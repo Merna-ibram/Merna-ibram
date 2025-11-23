@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="thermal_sale_order_receipt_report" inherit_id="sale.report_saleorder_document">
+        <xpath expr="." position="replace">
+            <t t-call="web.external_layout" t-options="{'display_header': False}">
+                <t t-set="o" t-value="o.with_context(lang=o.partner_id.lang)"/>
+
+                <style>
+                    body {
+                        font-size: 7px !important;
+                        width: 75mm;
+                        margin: 0;
+                        padding: 0;
+                    }
+                    table {
+                        border-collapse: collapse;
+                        width: 100%;
+                        font-size: 7px;
+                    }
+                    td, th {
+                        padding: 1px 2px;
+                        vertical-align: top;
+                    }
+                    th {
+                        text-align: left;
+                        border-bottom: 1px solid #000;
+                    }
+                    .logo {
+                        max-width: 60%;
+                        height: auto;
+                        display: block;
+                        margin: 0 auto 2px;
+                    }
+                    .receipt-header {
+                        text-align: center;
+                        margin-bottom: 3px;
+                    }
+                    .line {
+                        border-top: 1px dashed #000;
+                        margin: 2px 0;
+                        height: 0;
+                    }
+                    .totals td {
+                        font-size: 7px;
+                        padding: 1px 2px;
+                    }
+                    .grand-total td {
+                        font-weight: bold;
+                        border-top: 1px solid #000;
+                    }
+                    .text-end {
+                        text-align: right;
+                    }
+                    .footer {
+                        margin-top: 3px;
+                        border-top: 1px solid #000;
+                        text-align: center;
+                        font-size: 7px;
+                        padding-top: 2px;
+                    }
+                </style>
+
+                <div class="receipt-header">
+                    <!-- شعار واسم الشركة -->
+                    <img t-if="o.company_id.logo" t-att-src="image_data_uri(o.company_id.logo)" class="logo"/>
+                    <div class="company-name"><span t-field="o.company_id.name"/></div>
+                    <div class="company-info">
+                        <div t-if="o.company_id.street">
+                            <span t-field="o.company_id.street"/>
+                            <span t-if="o.company_id.city">, <t t-esc="o.company_id.city"/></span>
+                        </div>
+                        <div t-if="o.company_id.phone">Tel: <span t-field="o.company_id.phone"/></div>
+                    </div>
+
+                    <div class="line"></div>
+
+                    <!-- عنوان الوثيقة -->
+                    <div class="center bold" style="font-size:8px;">
+                        <t t-if="o.state not in ['draft','sent']">SALES ORDER</t>
+                        <t t-else="">QUOTATION</t>
+                        <br/><span t-field="o.name"/>
+                    </div>
+
+                    <div class="line"></div>
+
+                    <!-- معلومات العميل -->
+                    <table>
+                        <tr><td class="bold">Customer:</td><td><span t-field="o.partner_id.name"/></td></tr>
+                        <tr t-if="o.partner_id.phone"><td class="bold">Phone:</td><td><span t-field="o.partner_id.phone"/></td></tr>
+                        <tr t-if="o.client_order_ref"><td class="bold">Ref:</td><td><span t-field="o.client_order_ref"/></td></tr>
+                        <tr><td class="bold">Date:</td><td><span t-field="o.date_order" t-options="{'widget':'date'}"/></td></tr>
+                    </table>
+
+                    <div class="line"></div>
+
+                    <!-- المنتجات -->
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Item</th>
+                                <th class="text-end">Qty</th>
+                                <th class="text-end">Price</th>
+                                <th class="text-end">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <t t-foreach="o.order_line" t-as="line">
+                                <tr t-if="not line.display_type">
+                                    <td><span t-field="line.name"/></td>
+                                    <td class="text-end" t-esc="int(line.product_uom_qty)"/>
+                                    <td class="text-end" t-esc="'%.2f' % line.price_unit"/>
+                                    <td class="text-end" t-esc="'%.2f' % line.price_subtotal"/>
+                                </tr>
+                            </t>
+                        </tbody>
+                    </table>
+
+                    <div class="line"></div>
+
+                    <!-- الإجماليات -->
+                    <table class="totals">
+                        <tr><td>Subtotal:</td><td class="text-end" t-esc="'%.2f' % o.amount_untaxed"/></tr>
+                        <tr t-if="o.amount_tax"><td>Tax:</td><td class="text-end" t-esc="'%.2f' % o.amount_tax"/></tr>
+                        <tr class="grand-total"><td>Total:</td><td class="text-end" t-esc="'%.2f' % o.amount_total"/></tr>
+                    </table>
+
+                    <!-- Footer -->
+                    <div class="footer">
+                        Thank you for your business!<br/>
+                        Printed: <span t-esc="context_timestamp(datetime.datetime.now()).strftime('%d/%m/%Y %H:%M')"/>
+                    </div>
+                </div>
+            </t>
+        </xpath>
+    </template>
+</odoo>
