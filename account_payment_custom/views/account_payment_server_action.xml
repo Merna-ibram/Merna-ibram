@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="action_calculate_price_before_tax" model="ir.actions.server">
+            <field name="name">حساب المبلغ قبل الضريبة</field>
+            <field name="model_id" ref="account.model_account_payment"/>
+            <field name="binding_model_id" ref="account.model_account_payment"/>
+            <field name="binding_view_types">list,form</field>
+            <field name="state">code</field>
+            <field name="code"><![CDATA[
+for payment in records:
+    total_price_before_tax = 0.0
+
+    # البحث عن الفاتورة بناءً على رقمها في ref
+    invoice = env['account.move'].search([('name', '=', payment.ref)], limit=1)
+
+    if invoice:
+        has_tax = abs(invoice.amount_total - invoice.amount_untaxed) > 0.01
+        if has_tax:
+            total_price_before_tax = payment.amount / 1.15
+        else:
+            total_price_before_tax = payment.amount
+    else:
+        total_price_before_tax = payment.amount
+
+    payment.write({'price_before_tax': round(total_price_before_tax, 2)})
+
+action = {
+    'type': 'ir.actions.client',
+    'tag': 'display_notification',
+    'params': {
+        'title': 'تم بنجاح',
+        'message': f'تم حساب المبلغ قبل الضريبة لـ {len(records)} دفعة',
+        'type': 'success',
+        'sticky': False,
+    }
+}
+]]></field>
+        </record>
+    </data>
+</odoo>

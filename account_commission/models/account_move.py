@@ -2,7 +2,6 @@
 # Copyright 2014-2022 Tecnativa - Pedro M. Baeza
 # License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl).
 from collections import defaultdict
-
 from lxml import etree
 
 from odoo import _, api, exceptions, fields, models, Command
@@ -72,13 +71,13 @@ class AccountMove(models.Model):
     #         for line in record.line_ids:
     #             record.commission_total += sum(x.amount for x in line.agent_ids)
 
-    def action_post(self):
-        """Put settlements associated to the invoices in invoiced state."""
-        if self.partner_id.new_customer:
-            self.partner_id.new_customer = False
-            self.partner_id.agent_ids.new_customer_count = self.partner_id.agent_ids.new_customer_count + 1
-        self.mapped("line_ids.settlement_id").write({"state": "invoiced"})
-        return super().action_post()
+    # def action_post(self):
+    #     """Put settlements associated to the invoices in invoiced state."""
+    #     if self.partner_id.new_customer:
+    #         self.partner_id.new_customer = False
+    #         self.partner_id.agent_ids.new_customer_count = self.partner_id.agent_ids.new_customer_count + 1
+    #     self.mapped("line_ids.settlement_id").write({"state": "invoiced"})
+    #     return super().action_post()
 
     def button_cancel(self):
         """Check settled lines and put settlements associated to the invoices in
@@ -167,7 +166,7 @@ class AccountMove(models.Model):
                     for inv in invoices:
                         if inv.invoice_date:
                             month_name = inv.invoice_date.strftime('%B')  # January, February, etc.
-                            monthly_totals[month_name] += inv.amount_total
+                            monthly_totals[month_name] += inv.amount_untaxed
 
                     # Ordered month names for display
                     ordered_months = [
@@ -178,7 +177,7 @@ class AccountMove(models.Model):
                     # Get current invoice details
                     invoice_date = move.invoice_date or fields.Date.today()
                     current_month_name = invoice_date.strftime('%B')
-                    current_invoice_total = move.amount_total
+                    current_invoice_total = move.amount_untaxed
                     monthly_invoice_total = monthly_totals.get(current_month_name, 0.0)
                     salary_threshold = move.agents_name_invoice.salary * 2
                     print('salary_threshold', salary_threshold)
@@ -249,7 +248,7 @@ class AccountMove(models.Model):
             if move.state == 'posted' and any(move.line_ids.matched_debit_ids) or any(move.line_ids.matched_credit_ids):
                 continue
 
-            
+
             amount_price = amount_untaxed = amount_tax = amount_discount = 0.0
             for line in move.invoice_line_ids:
                 amount_price += line.quantity * line.price_unit
@@ -433,3 +432,56 @@ class AccountInvoiceLineAgent(models.Model):
             self.commission_id.invoice_state == "paid"
             and self.invoice_id.payment_state not in ["in_payment", "paid", "reversed"]
         ) or self.invoice_id.state != "posted"
+
+class AccountPayment(models.Model):
+    _inherit = 'account.payment'
+
+    def action_post(self):
+        res = super().action_post()
+
+        for payment in self:
+            payment_date = payment.date
+            # الفواتير التي تم دفعها بهذا الدفع
+            invoices = payment.reconciled_invoice_ids.filtered(lambda inv: inv.move_type == 'out_invoice')
+
+            for invoice in invoices:
+                # نتأكد أن الفاتورة مدفوعة
+                if invoice.payment_state in ['paid', 'in_payment']:
+                    agents = invoice.invoice_line_ids.mapped('agents')
+                    if not agents:
+                        continue
+
+                    for agent in agents:
+                        # نحصل على كل الفواتير المدفوعة لنفس الوكيل
+                        paid_invoices = self.env['account.move'].search([
+                            ('move_type', '=', 'out_invoice'),
+                            ('state', '=', 'posted'),
+                            ('payment_state', '=', 'paid'),
+                            ('invoice_line_ids.agents', 'in', agent.id),
+                        ])
+
+                        # تجميع الإجمالي حسب شهر الدفع
+                        monthly_totals = defaultdict(float)
+                        for inv in paid_invoices:
+                            payments = self.env['account.payment'].search([
+                                ('reconciled_invoice_ids', 'in', inv.id),
+                                ('state', '=', 'posted'),
+                            ])
+                            for pay in payments:
+                                if pay.date:
+                                    month_name = pay.date.strftime('%B')
+                                    monthly_totals[month_name] += inv.amount_untaxed
+
+                        current_month_name = payment_date.strftime('%B')
+                        monthly_invoice_total = monthly_totals.get(current_month_name, 0.0)
+                        salary_threshold = agent.salary * 2
+
+                        # حساب العمولة بناء على الدفع الشهري
+                        commission_total = 0.0
+                        if monthly_invoice_total >= salary_threshold:
+                            commission_total = monthly_invoice_total * 0.05
+
+                        invoice.commission_total = commission_total
+                        # يمكنك هنا إنشاء سجل عمولة أو تسجيل Log لو أردت
+
+        return res
